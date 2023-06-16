@@ -6,6 +6,6 @@ import net.mamoe.mirai.console.data.value
 
 object PluginConf: AutoSavePluginConfig("Config"){
     @ValueDescription("管理员QQ")
-    var manager: Long by value(1822245039L)
+    val manager: Long by value(1822245039L)
 
 }
