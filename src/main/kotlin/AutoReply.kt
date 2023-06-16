@@ -14,7 +14,7 @@ object AutoReply : KotlinPlugin(
         JvmPluginDescription(
                 id = "tk.mcsog.auto-reply",
                 name = "Auto Reply",
-                version = "0.1.0",
+                version = "0.1.1",
         ) {
             author("MCSOG")
         }
