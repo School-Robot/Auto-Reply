@@ -295,11 +295,11 @@ object AutoReply : KotlinPlugin(
                 PluginData.groupData[this.subject.id.toString()+"-"+this.bot.id.toString()]?.let { it1 ->
                     if (this.target.id == this.bot.id){
                         PluginData.dictData[it1.dictName]?.let { it2 ->
-                            it2.dictList["NudgeSelf"]?.deserializeMiraiCode()?.let { it3 -> this.subject.sendMessage(it3) }
+                            it2.dictList["NudgeSelf"]?.replace("\${action}", this.action)?.replace("\${suffix}", this.suffix)?.replace("\${from}", this.from.id.toString())?.replace("\${target}", this.target.id.toString())?.deserializeMiraiCode()?.let { it3 -> this.subject.sendMessage(it3) }
                         }
                     }else{
                         PluginData.dictData[it1.dictName]?.let { it2 ->
-                            it2.dictList["Nudge"]?.deserializeMiraiCode()?.let { it3 -> this.subject.sendMessage(it3) }
+                            it2.dictList["Nudge"]?.replace("\${action}", this.action)?.replace("\${suffix}", this.suffix)?.replace("\${from}", this.from.id.toString())?.replace("\${target}", this.target.id.toString())?.deserializeMiraiCode()?.let { it3 -> this.subject.sendMessage(it3) }
                         }
                     }
                 }
