@@ -14,7 +14,7 @@ object AutoReply : KotlinPlugin(
         JvmPluginDescription(
                 id = "tk.mcsog.auto-reply",
                 name = "Auto Reply",
-                version = "0.1.2",
+                version = "0.1.3",
         ) {
             author("MCSOG")
         }
@@ -362,6 +362,8 @@ object AutoReply : KotlinPlugin(
     }
 
     override fun onDisable() {
+        PluginConf.save()
+        PluginData.save()
         logger.info { "Plugin disabled" }
     }
 }
