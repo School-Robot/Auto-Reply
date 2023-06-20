@@ -6,15 +6,19 @@ import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.event.events.*
 import net.mamoe.mirai.event.globalEventChannel
 import net.mamoe.mirai.message.code.MiraiCode.deserializeMiraiCode
-import net.mamoe.mirai.message.data.At
-import net.mamoe.mirai.message.data.PlainText
+import net.mamoe.mirai.message.data.*
+import net.mamoe.mirai.message.data.Image.Key.isUploaded
+import net.mamoe.mirai.message.data.Image.Key.queryUrl
+import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import net.mamoe.mirai.utils.info
+import java.io.File
+import java.net.URL
 
 object AutoReply : KotlinPlugin(
         JvmPluginDescription(
                 id = "tk.mcsog.auto-reply",
                 name = "Auto Reply",
-                version = "0.1.4",
+                version = "0.1.5",
         ) {
             author("MCSOG")
         }
@@ -22,6 +26,8 @@ object AutoReply : KotlinPlugin(
     override fun onEnable() {
         PluginConf.reload()
         PluginData.reload()
+        File(dataFolder.absolutePath+File.separatorChar+"image").mkdirs()
+        File(dataFolder.absolutePath+File.separatorChar+"audio").mkdirs()
         logger.info { "Plugin loaded" }
         globalEventChannel().subscribeAlways<GroupMessageEvent> {
             val m: String = this.message.serializeToMiraiCode()
@@ -64,6 +70,12 @@ object AutoReply : KotlinPlugin(
                     if (m_split[2] == ""){
                         this.group.sendMessage(At(this.sender.id)+PlainText("回复语不能为空"))
                         return@subscribeAlways
+                    }
+                    val mc: MessageChain = m_split[2].deserializeMiraiCode()
+                    for (mc_single in mc){
+                        if (mc_single is Image){
+                            File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).writeBytes(URL(mc_single.queryUrl()).readBytes())
+                        }
                     }
                     PluginData.dictData[dn]!!.dictList[m_split[1]] = m_split[2]
                     this.group.sendMessage(At(this.sender.id)+PlainText("添加成功"))
@@ -285,7 +297,30 @@ object AutoReply : KotlinPlugin(
             // auto-reply
             PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let { it1 ->
                 PluginData.dictData[it1.dictName]?.let { it2 ->
-                    it2.dictList[m]?.deserializeMiraiCode()?.let { it3 -> this.group.sendMessage(it3) }
+                    it2.dictList[m]?.deserializeMiraiCode()?.let { it3 ->
+                        var mc: MessageChain = emptyMessageChain()
+                        for (mc_single in it3){
+                            if (mc_single is Image){
+                                if (!mc_single.isUploaded(this.bot)){
+                                    File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
+                                        if (it4.exists()){
+                                            it4.toExternalResource().use { res ->
+                                                val i: Image = this.group.uploadImage(res)
+                                                mc+=i
+                                            }
+                                        }else{
+                                            mc+=mc_single
+                                        }
+                                    }
+                                }else{
+                                    mc+=mc_single
+                                }
+                            }else{
+                                mc+=mc_single
+                            }
+                        }
+                        this.group.sendMessage(mc)
+                    }
                 }
             }
         }
@@ -295,11 +330,57 @@ object AutoReply : KotlinPlugin(
                 PluginData.groupData[this.subject.id.toString()+"-"+this.bot.id.toString()]?.let { it1 ->
                     if (this.target.id == this.bot.id){
                         PluginData.dictData[it1.dictName]?.let { it2 ->
-                            it2.dictList["NudgeSelf"]?.replace("\${action}", this.action)?.replace("\${suffix}", this.suffix)?.replace("\${from}", this.from.id.toString())?.replace("\${target}", this.target.id.toString())?.deserializeMiraiCode()?.let { it3 -> this.subject.sendMessage(it3) }
+                            it2.dictList["NudgeSelf"]?.replace("\${action}", this.action)?.replace("\${suffix}", this.suffix)?.replace("\${from}", this.from.id.toString())?.replace("\${target}", this.target.id.toString())?.deserializeMiraiCode()?.let { it3 ->
+                                var mc: MessageChain = emptyMessageChain()
+                                for (mc_single in it3){
+                                    if (mc_single is Image){
+                                        if (!mc_single.isUploaded(this.bot)){
+                                            File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
+                                                if (it4.exists()){
+                                                    it4.toExternalResource().use { res ->
+                                                        val i: Image = this.subject.uploadImage(res)
+                                                        mc+=i
+                                                    }
+                                                }else{
+                                                    mc+=mc_single
+                                                }
+                                            }
+                                        }else{
+                                            mc+=mc_single
+                                        }
+                                    }else{
+                                        mc+=mc_single
+                                    }
+                                }
+                                this.subject.sendMessage(mc)
+                            }
                         }
                     }else{
                         PluginData.dictData[it1.dictName]?.let { it2 ->
-                            it2.dictList["Nudge"]?.replace("\${action}", this.action)?.replace("\${suffix}", this.suffix)?.replace("\${from}", this.from.id.toString())?.replace("\${target}", this.target.id.toString())?.deserializeMiraiCode()?.let { it3 -> this.subject.sendMessage(it3) }
+                            it2.dictList["Nudge"]?.replace("\${action}", this.action)?.replace("\${suffix}", this.suffix)?.replace("\${from}", this.from.id.toString())?.replace("\${target}", this.target.id.toString())?.deserializeMiraiCode()?.let { it3 ->
+                                var mc: MessageChain = emptyMessageChain()
+                                for (mc_single in it3){
+                                    if (mc_single is Image){
+                                        if (!mc_single.isUploaded(this.bot)){
+                                            File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
+                                                if (it4.exists()){
+                                                    it4.toExternalResource().use { res ->
+                                                        val i: Image = this.subject.uploadImage(res)
+                                                        mc+=i
+                                                    }
+                                                }else{
+                                                    mc+=mc_single
+                                                }
+                                            }
+                                        }else{
+                                            mc+=mc_single
+                                        }
+                                    }else{
+                                        mc+=mc_single
+                                    }
+                                }
+                                this.subject.sendMessage(mc)
+                            }
                         }
                     }
                 }
@@ -310,7 +391,30 @@ object AutoReply : KotlinPlugin(
             PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let { it1 ->
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberJoin"]?.replace("\${member}", this.member.id.toString())?.deserializeMiraiCode()
-                        ?.let { it3 -> this.group.sendMessage(it3)}
+                        ?.let { it3 ->
+                            var mc: MessageChain = emptyMessageChain()
+                            for (mc_single in it3){
+                                if (mc_single is Image){
+                                    if (!mc_single.isUploaded(this.bot)){
+                                        File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
+                                            if (it4.exists()){
+                                                it4.toExternalResource().use { res ->
+                                                    val i: Image = this.group.uploadImage(res)
+                                                    mc+=i
+                                                }
+                                            }else{
+                                                mc+=mc_single
+                                            }
+                                        }
+                                    }else{
+                                        mc+=mc_single
+                                    }
+                                }else{
+                                    mc+=mc_single
+                                }
+                            }
+                            this.group.sendMessage(mc)
+                        }
                 }
             }
         }
@@ -319,7 +423,30 @@ object AutoReply : KotlinPlugin(
             PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let { it1 ->
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberJoinInvite"]?.replace("\${member}", this.member.id.toString())?.replace("\${invitor}", this.invitor.id.toString())?.deserializeMiraiCode()
-                        ?.let { it3 -> this.group.sendMessage(it3)}
+                        ?.let { it3 ->
+                            var mc: MessageChain = emptyMessageChain()
+                            for (mc_single in it3){
+                                if (mc_single is Image){
+                                    if (!mc_single.isUploaded(this.bot)){
+                                        File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
+                                            if (it4.exists()){
+                                                it4.toExternalResource().use { res ->
+                                                    val i: Image = this.group.uploadImage(res)
+                                                    mc+=i
+                                                }
+                                            }else{
+                                                mc+=mc_single
+                                            }
+                                        }
+                                    }else{
+                                        mc+=mc_single
+                                    }
+                                }else{
+                                    mc+=mc_single
+                                }
+                            }
+                            this.group.sendMessage(mc)
+                        }
                 }
             }
         }
@@ -328,7 +455,30 @@ object AutoReply : KotlinPlugin(
             PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let { it1 ->
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberLeave"]?.replace("\${member}", this.member.id.toString())?.deserializeMiraiCode()
-                        ?.let { it3 -> this.group.sendMessage(it3)}
+                        ?.let { it3 ->
+                            var mc: MessageChain = emptyMessageChain()
+                            for (mc_single in it3){
+                                if (mc_single is Image){
+                                    if (!mc_single.isUploaded(this.bot)){
+                                        File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
+                                            if (it4.exists()){
+                                                it4.toExternalResource().use { res ->
+                                                    val i: Image = this.group.uploadImage(res)
+                                                    mc+=i
+                                                }
+                                            }else{
+                                                mc+=mc_single
+                                            }
+                                        }
+                                    }else{
+                                        mc+=mc_single
+                                    }
+                                }else{
+                                    mc+=mc_single
+                                }
+                            }
+                            this.group.sendMessage(mc)
+                        }
                 }
             }
         }
@@ -337,7 +487,30 @@ object AutoReply : KotlinPlugin(
             PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let { it1 ->
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberLeaveKick"]?.replace("\${member}", this.member.id.toString())?.replace("\${operator}", this.operatorOrBot.id.toString())?.deserializeMiraiCode()
-                        ?.let { it3 -> this.group.sendMessage(it3)}
+                        ?.let { it3 ->
+                            var mc: MessageChain = emptyMessageChain()
+                            for (mc_single in it3){
+                                if (mc_single is Image){
+                                    if (!mc_single.isUploaded(this.bot)){
+                                        File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
+                                            if (it4.exists()){
+                                                it4.toExternalResource().use { res ->
+                                                    val i: Image = this.group.uploadImage(res)
+                                                    mc+=i
+                                                }
+                                            }else{
+                                                mc+=mc_single
+                                            }
+                                        }
+                                    }else{
+                                        mc+=mc_single
+                                    }
+                                }else{
+                                    mc+=mc_single
+                                }
+                            }
+                            this.group.sendMessage(mc)
+                        }
                 }
             }
         }
@@ -346,7 +519,30 @@ object AutoReply : KotlinPlugin(
             PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let { it1 ->
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberMute"]?.replace("\${member}", this.member.id.toString())?.replace("\${durationSeconds}", this.durationSeconds.toString())?.replace("\${operator}", this.operatorOrBot.id.toString())?.deserializeMiraiCode()
-                        ?.let { it3 -> this.group.sendMessage(it3)}
+                        ?.let { it3 ->
+                            var mc: MessageChain = emptyMessageChain()
+                            for (mc_single in it3){
+                                if (mc_single is Image){
+                                    if (!mc_single.isUploaded(this.bot)){
+                                        File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
+                                            if (it4.exists()){
+                                                it4.toExternalResource().use { res ->
+                                                    val i: Image = this.group.uploadImage(res)
+                                                    mc+=i
+                                                }
+                                            }else{
+                                                mc+=mc_single
+                                            }
+                                        }
+                                    }else{
+                                        mc+=mc_single
+                                    }
+                                }else{
+                                    mc+=mc_single
+                                }
+                            }
+                            this.group.sendMessage(mc)
+                        }
                 }
             }
         }
@@ -355,7 +551,30 @@ object AutoReply : KotlinPlugin(
             PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let { it1 ->
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberUnmute"]?.replace("\${member}", this.member.id.toString())?.replace("\${operator}", this.operatorOrBot.id.toString())?.deserializeMiraiCode()
-                        ?.let { it3 -> this.group.sendMessage(it3)}
+                        ?.let { it3 ->
+                            var mc: MessageChain = emptyMessageChain()
+                            for (mc_single in it3){
+                                if (mc_single is Image){
+                                    if (!mc_single.isUploaded(this.bot)){
+                                        File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
+                                            if (it4.exists()){
+                                                it4.toExternalResource().use { res ->
+                                                    val i: Image = this.group.uploadImage(res)
+                                                    mc+=i
+                                                }
+                                            }else{
+                                                mc+=mc_single
+                                            }
+                                        }
+                                    }else{
+                                        mc+=mc_single
+                                    }
+                                }else{
+                                    mc+=mc_single
+                                }
+                            }
+                            this.group.sendMessage(mc)
+                        }
                 }
             }
         }
