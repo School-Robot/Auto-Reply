@@ -1,5 +1,6 @@
 package tk.mcsog
 
+import kotlinx.coroutines.launch
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
 import net.mamoe.mirai.contact.Group
@@ -18,7 +19,7 @@ object AutoReply : KotlinPlugin(
         JvmPluginDescription(
                 id = "tk.mcsog.auto-reply",
                 name = "Auto Reply",
-                version = "0.1.5",
+                version = "0.1.6",
         ) {
             author("MCSOG")
         }
@@ -74,7 +75,9 @@ object AutoReply : KotlinPlugin(
                     val mc: MessageChain = m_split[2].deserializeMiraiCode()
                     for (mc_single in mc){
                         if (mc_single is Image){
-                            File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).writeBytes(URL(mc_single.queryUrl()).readBytes())
+                            launch {
+                                File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).writeBytes(URL(mc_single.queryUrl()).readBytes())
+                            }
                         }
                     }
                     PluginData.dictData[dn]!!.dictList[m_split[1]] = m_split[2]
