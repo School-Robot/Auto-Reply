@@ -19,7 +19,7 @@ object AutoReply : KotlinPlugin(
         JvmPluginDescription(
                 id = "tk.mcsog.auto-reply",
                 name = "Auto Reply",
-                version = "0.1.8",
+                version = "0.1.9",
         ) {
             author("MCSOG")
         }
@@ -35,7 +35,7 @@ object AutoReply : KotlinPlugin(
 
             // help
             if (m == "/dicthelp") {
-                this.group.sendMessage(At(this.sender.id)+PlainText("/dictadd 触发语 回复语-添加词条\n/dictdel 触发语-删除词条\n/dictcreate 词库名-创建词库\n/dictuse 词库名-使用词库\n/dictsdel 词库名-删除词库\n/dictman-开启或关闭权限限制\n/dictmanadd QQ-添加权限\n/dictmandel QQ-删除权限"))
+                this.group.sendMessage(At(this.sender.id)+PlainText("/dictadd 触发语 回复语-添加词条\n/dictdel 触发语-删除词条\n/dictcreate 词库名-创建词库\n/dictuse 词库名-使用词库\n/dictcancel-取消词库\n/dictsdel 词库名-删除词库\n/dictman-开启或关闭权限限制\n/dictmanadd QQ-添加权限\n/dictmandel QQ-删除权限"))
                 return@subscribeAlways
             }
 
@@ -177,6 +177,22 @@ object AutoReply : KotlinPlugin(
                     this.group.sendMessage(At(this.sender.id)+PlainText("格式错误"))
                     return@subscribeAlways
                 }
+            }
+
+            // cancel
+            if (m == "/dictcancel"){
+                PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let {
+                    if (this.sender.id == PluginConf.manager){
+                        it.dictName = it.groupNum.toString()
+                        this.group.sendMessage(At(this.sender.id)+PlainText("取消成功"))
+                        return@subscribeAlways
+                    }else{
+                        this.group.sendMessage(At(this.sender.id)+PlainText("权限不足"))
+                        return@subscribeAlways
+                    }
+                }
+                this.group.sendMessage(At(this.sender.id)+PlainText("无词库"))
+                return@subscribeAlways
             }
 
             // del

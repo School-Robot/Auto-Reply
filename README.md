@@ -10,6 +10,7 @@
 - 删除词条`/dictdel 触发语`
 - 创建词库`/dictcreate 词库名`
 - 使用词库`/dictuse 词库名`
+- 取消词库`/dictcancel`
 - 删除词库`/dictsdel 词库名`
 - 切换权限`/dictman`
 - 添加权限`/dictmanadd QQ`
