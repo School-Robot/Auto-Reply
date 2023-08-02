@@ -19,7 +19,7 @@ object AutoReply : KotlinPlugin(
         JvmPluginDescription(
                 id = "tk.mcsog.auto-reply",
                 name = "Auto Reply",
-                version = "0.1.7",
+                version = "0.1.8",
         ) {
             author("MCSOG")
         }
@@ -35,7 +35,7 @@ object AutoReply : KotlinPlugin(
 
             // help
             if (m == "/dicthelp") {
-                this.group.sendMessage(At(this.sender.id)+PlainText("/dictadd 触发语 回复语-添加词条\n/dictdel 触发语-删除词条\n/dictcreate 词库名-创建词库\n/dictuse 词库名-使用词库\n/dictdel 词库名-删除词库\n/dictman-开启或关闭权限限制\n/dictmanadd QQ-添加权限\n/dictmandel QQ-删除权限"))
+                this.group.sendMessage(At(this.sender.id)+PlainText("/dictadd 触发语 回复语-添加词条\n/dictdel 触发语-删除词条\n/dictcreate 词库名-创建词库\n/dictuse 词库名-使用词库\n/dictsdel 词库名-删除词库\n/dictman-开启或关闭权限限制\n/dictmanadd QQ-添加权限\n/dictmandel QQ-删除权限"))
                 return@subscribeAlways
             }
 
@@ -180,8 +180,8 @@ object AutoReply : KotlinPlugin(
             }
 
             // del
-            if (m.startsWith("/dictdel")&&m.length>9){
-                val c: Char = m[8]
+            if (m.startsWith("/dictsdel")&&m.length>9){
+                val c: Char = m[9]
                 val m_split = m.split(c)
                 if (m_split.size == 2){
                     PluginData.dictData[m_split[1]]?.let {
