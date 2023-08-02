@@ -8,5 +8,5 @@ data class GroupInfo(
     var dictName: String,
     val qq: Long,
     var admin: Boolean = false,
-    var permission: ArrayList<Long> = arrayListOf<Long>(1822245039L)
+    var permission: ArrayList<Long> = arrayListOf<Long>(PluginConf.manager)
 )
