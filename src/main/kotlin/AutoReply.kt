@@ -358,7 +358,7 @@ object AutoReply : KotlinPlugin(
             // auto-reply
             PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let { it1 ->
                 PluginData.dictData[it1.dictName]?.let { it2 ->
-                    it2.dictList[m]?.replace("{group}",this.group.id.toString())?.replace("{sender}",this.sender.id.toString())?.deserializeMiraiCode()?.let { it3 ->
+                    it2.dictList[m]?.replace("\${group}",this.group.id.toString())?.replace("\${sender}",this.sender.id.toString())?.deserializeMiraiCode()?.let { it3 ->
                         this.group.sendMessage(QuoteReply(this.message)+ SendMsg(this.bot, this.group, it3))
                     }
                 }
@@ -453,20 +453,20 @@ object AutoReply : KotlinPlugin(
     }
 
     fun RecMsg(msg: MessageChain): MessageChain{
-        val mc: MessageChain = emptyMessageChain()
+        var mc: MessageChain = emptyMessageChain()
         for (mc_single in msg){
             if (mc_single is Image){
                 launch {
                     File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).writeBytes(URL(mc_single.queryUrl()).readBytes())
                 }
-                mc.plus(mc_single)
+                mc+=mc_single
             }else if (mc_single is OnlineAudio){
                 launch {
                     File(dataFolder.absolutePath + File.separatorChar + "audio" + File.separatorChar + mc_single.filename).writeBytes(URL(mc_single.urlForDownload).readBytes())
                 }
-                mc.plus(PlainText("{mirai:audio:"+mc_single.filename+"}"))
+                mc+=PlainText("\${mirai:audio:"+mc_single.filename+"}")
             }else{
-                mc.plus(mc_single)
+                mc+=mc_single
             }
         }
         return mc
@@ -474,7 +474,7 @@ object AutoReply : KotlinPlugin(
 
     suspend fun SendMsg(bot: Bot, target: Contact, msg: MessageChain): MessageChain{
         val group:Group = target as Group
-        val mc: MessageChain = emptyMessageChain()
+        var mc: MessageChain = emptyMessageChain()
         for (mc_single in msg){
             if (mc_single is Image){
                 if (!mc_single.isUploaded(bot)){
@@ -482,23 +482,23 @@ object AutoReply : KotlinPlugin(
                         if (it.exists()){
                             it.toExternalResource().use { res ->
                                 val i: Image = group.uploadImage(res)
-                                mc.plus(i)
+                                mc+=i
                             }
                         }else{
-                            mc.plus(mc_single)
+                            mc+=mc_single
                         }
                     }
                 }else{
-                    mc.plus(mc_single)
+                    mc+=mc_single
                 }
             }else if(mc_single is PlainText){
-                if ("{mirai:" in mc_single.content){
+                if ("\${mirai:" in mc_single.content){
                     var m:String = mc_single.content
-                    while ("{mirai:" in m){
-                        mc.plus(PlainText(m.substring(0,m.indexOf("{mirai:"))))
-                        m=m.substring(m.indexOf("{mirai:"))
+                    while ("\${mirai:" in m){
+                        mc+=PlainText(m.substring(0,m.indexOf("\${mirai:")))
+                        m=m.substring(m.indexOf("\${mirai:"))
                         if ("}" in m){
-                            val mirai:String = m.substring(1,m.indexOf("}"))
+                            val mirai:String = m.substring(2,m.indexOf("}"))
                             val mirai_split = mirai.split(":")
                             if(mirai_split.size>=3) {
                                 when (mirai_split[1]) {
@@ -507,10 +507,10 @@ object AutoReply : KotlinPlugin(
                                             if (it.exists()) {
                                                 it.toExternalResource().use { res ->
                                                     val i: Audio = group.uploadAudio(res)
-                                                    mc.plus(i)
+                                                    mc+=i
                                                 }
                                             } else {
-                                                mc.plus(mc_single)
+                                                mc+=mc_single
                                             }
                                         }
                                     }
@@ -519,17 +519,17 @@ object AutoReply : KotlinPlugin(
                                         if (mirai_split[2].startsWith("http")) {
                                             URL(mirai_split[2]).readBytes().toExternalResource().use {
                                                 val i: Image = group.uploadImage(it)
-                                                mc.plus(i)
+                                                mc+=i
                                             }
                                         } else {
                                             File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mirai_split[2]).let {
                                                 if (it.exists()) {
                                                     it.toExternalResource().use { res ->
                                                         val i: Image = group.uploadImage(res)
-                                                        mc.plus(i)
+                                                        mc+=i
                                                     }
                                                 } else {
-                                                    mc.plus(mc_single)
+                                                    mc+=mc_single
                                                 }
                                             }
                                         }
@@ -553,9 +553,9 @@ object AutoReply : KotlinPlugin(
 
                                     "at" -> {
                                         if (mirai_split[2] == "all") {
-                                            mc.plus(AtAll)
+                                            mc+=AtAll
                                         } else {
-                                            mc.plus(At(mirai_split[2].toLong()))
+                                            mc+=At(mirai_split[2].toLong())
                                         }
                                     }
                                 }
@@ -563,10 +563,12 @@ object AutoReply : KotlinPlugin(
                             m=m.substring(m.indexOf("}")+1)
                         }
                     }
-                    mc.plus(PlainText(m))
+                    mc+=PlainText(m)
+                }else{
+                    mc+=mc_single
                 }
             }else{
-                mc.plus(mc_single)
+                mc+=mc_single
             }
         }
         return mc

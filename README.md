@@ -49,29 +49,29 @@
 
 回复关键字
 
-- 成员QQ号`{member}`
-- 禁言时长`{durationSeconds}`
-- 操作者QQ号`{operator}`
-- 邀请者QQ号`{invitor}`
-- 戳一戳动作`{action}`
-- 戳一戳后缀`{suffix}`
-- 戳一戳来源`{from}`
-- 戳一戳目标`{target}`
-- 群号`{group}`
-- 发送者QQ号`{sender}`
+- 成员QQ号`${member}`
+- 禁言时长`${durationSeconds}`
+- 操作者QQ号`${operator}`
+- 邀请者QQ号`${invitor}`
+- 戳一戳动作`${action}`
+- 戳一戳后缀`${suffix}`
+- 戳一戳来源`${from}`
+- 戳一戳目标`${target}`
+- 群号`${group}`
+- 发送者QQ号`${sender}`
 
 ### 回复触发功能
 
-回复触发格式为`{mirai:action:param}`
+回复触发格式为`${mirai:action:param}`
 
-- At某人`{mirai:at:QQ}`
-- At全体`{mirai:at:all}`
-- 戳一戳`{mirai:nudge:QQ}`
-- 禁言某人`{mirai:mute:QQ:second}`
-- 解除禁言`{mirai:mute:QQ}`
-- 解除禁言`{mirai:unmute:QQ}`
-- 图片消息`{mirai:image:filename}`
-- 网络图片`{mirai:image:URL}`
-- 语音消息`{mirai:audio:filename}`
+- At某人`${mirai:at:QQ}`
+- At全体`${mirai:at:all}`
+- 戳一戳`${mirai:nudge:QQ}`
+- 禁言某人`${mirai:mute:QQ:second}`
+- 解除禁言`${mirai:mute:QQ}`
+- 解除禁言`${mirai:unmute:QQ}`
+- 图片消息`${mirai:image:filename}`
+- 网络图片`${mirai:image:URL}`
+- 语音消息`${mirai:audio:filename}`
 
 图片和语言文件需在对应文件夹下
