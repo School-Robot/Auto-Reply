@@ -1,8 +1,10 @@
 package tk.mcsog
 
 import kotlinx.coroutines.launch
+import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
+import net.mamoe.mirai.contact.Contact
 import net.mamoe.mirai.contact.Group
 import net.mamoe.mirai.event.events.*
 import net.mamoe.mirai.event.globalEventChannel
@@ -19,7 +21,7 @@ object AutoReply : KotlinPlugin(
         JvmPluginDescription(
                 id = "tk.mcsog.auto-reply",
                 name = "Auto Reply",
-                version = "0.1.9",
+                version = "0.2.0",
         ) {
             author("MCSOG")
         }
@@ -32,10 +34,57 @@ object AutoReply : KotlinPlugin(
         logger.info { "Plugin loaded" }
         globalEventChannel().subscribeAlways<GroupMessageEvent> {
             val m: String = this.message.serializeToMiraiCode()
+            PluginData.tempMsg[this.group.id.toString()+"-"+this.sender.id.toString()]?.let {
+                if (it.state == 0){
+                    it.msg = m
+                    it.state = 1
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("请发送回复语"))
+                    return@subscribeAlways
+                }else if (it.state == 1){
+                    it.reply = RecMsg(this.message).serializeToMiraiCode()
+                    PluginData.dictData[it.dn]?.let { it1 ->
+                        it1.dictList[it.msg] = it.reply
+                    }
+                    PluginData.tempMsg.remove(this.group.id.toString()+"-"+this.sender.id.toString())
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("添加成功"))
+                    return@subscribeAlways
+                }
+            }
 
             // help
             if (m == "/dicthelp") {
-                this.group.sendMessage(At(this.sender.id)+PlainText("/dictadd 触发语 回复语-添加词条\n/dictdel 触发语-删除词条\n/dictcreate 词库名-创建词库\n/dictuse 词库名-使用词库\n/dictcancel-取消词库\n/dictsdel 词库名-删除词库\n/dictman-开启或关闭权限限制\n/dictmanadd QQ-添加权限\n/dictmandel QQ-删除权限"))
+                this.group.sendMessage(QuoteReply(this.message)+PlainText("/dictadd 触发语 回复语-添加词条\n/dictadd-交互式添加\n/dictdel 触发语-删除词条\n/dictcreate 词库名-创建词库\n/dictuse 词库名-使用词库\n/dictcancel-取消词库\n/dictsdel 词库名-删除词库\n/dictman-开启或关闭权限限制\n/dictmanadd QQ-添加权限\n/dictmandel QQ-删除权限"))
+                return@subscribeAlways
+            }
+
+            // add
+            if (m == "/dictadd"){
+                var new = true
+                var dn = "test"
+                PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let {
+                    new = false
+                    dn = if (it.admin){
+                        if (this.sender.id in it.permission){
+                            it.dictName
+                        }else{
+                            this.group.sendMessage(QuoteReply(this.message)+PlainText("权限不足"))
+                            return@subscribeAlways
+                        }
+                    }else{
+                        it.dictName
+                    }
+                }
+                if (new){
+                    val ng = GroupInfo(this.group.id, this.group.id.toString(), this.bot.id)
+                    PluginData.dictData[this.group.id.toString()]?:let {
+                        val nd = DictInfo(this.group.id.toString())
+                        PluginData.dictData[this.group.id.toString()] = nd
+                    }
+                    PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()] = ng
+                    dn = this.group.id.toString()
+                }
+                PluginData.tempMsg[this.group.id.toString()+"-"+this.sender.id.toString()] = TempMsg(this.group.id, dn)
+                this.group.sendMessage(QuoteReply(this.message)+PlainText("请发送触发语"))
                 return@subscribeAlways
             }
 
@@ -49,7 +98,7 @@ object AutoReply : KotlinPlugin(
                         if (this.sender.id in it.permission){
                             it.dictName
                         }else{
-                            this.group.sendMessage(At(this.sender.id)+PlainText("权限不足"))
+                            this.group.sendMessage(QuoteReply(this.message)+PlainText("权限不足"))
                             return@subscribeAlways
                         }
                     }else{
@@ -69,22 +118,15 @@ object AutoReply : KotlinPlugin(
                 val m_split = m.split(c)
                 if (m_split.size == 3){
                     if (m_split[2] == ""){
-                        this.group.sendMessage(At(this.sender.id)+PlainText("回复语不能为空"))
+                        this.group.sendMessage(QuoteReply(this.message)+PlainText("回复语不能为空"))
                         return@subscribeAlways
                     }
                     val mc: MessageChain = m_split[2].deserializeMiraiCode()
-                    for (mc_single in mc){
-                        if (mc_single is Image){
-                            launch {
-                                File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).writeBytes(URL(mc_single.queryUrl()).readBytes())
-                            }
-                        }
-                    }
-                    PluginData.dictData[dn]!!.dictList[m_split[1]] = m_split[2]
-                    this.group.sendMessage(At(this.sender.id)+PlainText("添加成功"))
+                    PluginData.dictData[dn]!!.dictList[m_split[1]] = RecMsg(mc).serializeToMiraiCode()
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("添加成功"))
                     return@subscribeAlways
                 }else{
-                    this.group.sendMessage(At(this.sender.id)+PlainText("格式错误"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("格式错误"))
                     return@subscribeAlways
                 }
             }
@@ -99,7 +141,7 @@ object AutoReply : KotlinPlugin(
                         if (this.sender.id in it.permission){
                             it.dictName
                         }else{
-                            this.group.sendMessage(At(this.sender.id)+PlainText("权限不足"))
+                            this.group.sendMessage(QuoteReply(this.message)+PlainText("权限不足"))
                             return@subscribeAlways
                         }
                     }else{
@@ -107,17 +149,17 @@ object AutoReply : KotlinPlugin(
                     }
                 }
                 if (new){
-                    this.group.sendMessage(At(this.sender.id)+PlainText("无词条"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("无词条"))
                     return@subscribeAlways
                 }
                 val c: Char = m[8]
                 val m_split = m.split(c)
                 if (m_split.size == 2){
                     PluginData.dictData[dn]!!.dictList.remove(m_split[1])
-                    this.group.sendMessage(At(this.sender.id)+PlainText("删除成功"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("删除成功"))
                     return@subscribeAlways
                 }else{
-                    this.group.sendMessage(At(this.sender.id)+PlainText("格式错误"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("格式错误"))
                     return@subscribeAlways
                 }
             }
@@ -128,20 +170,20 @@ object AutoReply : KotlinPlugin(
                 val m_split = m.split(c)
                 if (m_split.size == 2){
                     PluginData.dictData[m_split[1]]?.let {
-                        this.group.sendMessage(At(this.sender.id)+PlainText("词库已存在"))
+                        this.group.sendMessage(QuoteReply(this.message)+PlainText("词库已存在"))
                         return@subscribeAlways
                     }
                     if (this.sender.id == PluginConf.manager){
                         val nd = DictInfo(m_split[1])
                         PluginData.dictData[m_split[1]] = nd
-                        this.group.sendMessage(At(this.sender.id)+PlainText("创建成功"))
+                        this.group.sendMessage(QuoteReply(this.message)+PlainText("创建成功"))
                         return@subscribeAlways
                     }else{
-                        this.group.sendMessage(At(this.sender.id)+PlainText("权限不足"))
+                        this.group.sendMessage(QuoteReply(this.message)+PlainText("权限不足"))
                         return@subscribeAlways
                     }
                 }else{
-                    this.group.sendMessage(At(this.sender.id)+PlainText("格式错误"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("格式错误"))
                     return@subscribeAlways
                 }
             }
@@ -155,7 +197,7 @@ object AutoReply : KotlinPlugin(
                         if (this.sender.id == PluginConf.manager){
                             PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let {
                                 it.dictName = m_split[1]
-                                this.group.sendMessage(At(this.sender.id)+PlainText("切换成功"))
+                                this.group.sendMessage(QuoteReply(this.message)+PlainText("切换成功"))
                                 return@subscribeAlways
                             }
                             val ng = GroupInfo(this.group.id, m_split[1], this.bot.id)
@@ -164,17 +206,17 @@ object AutoReply : KotlinPlugin(
                                 PluginData.dictData[this.group.id.toString()] = nd
                             }
                             PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()] = ng
-                            this.group.sendMessage(At(this.sender.id)+PlainText("切换成功"))
+                            this.group.sendMessage(QuoteReply(this.message)+PlainText("切换成功"))
                             return@subscribeAlways
                         }else{
-                            this.group.sendMessage(At(this.sender.id)+PlainText("权限不足"))
+                            this.group.sendMessage(QuoteReply(this.message)+PlainText("权限不足"))
                             return@subscribeAlways
                         }
                     }
-                    this.group.sendMessage(At(this.sender.id)+PlainText("词库不存在"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("词库不存在"))
                     return@subscribeAlways
                 }else{
-                    this.group.sendMessage(At(this.sender.id)+PlainText("格式错误"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("格式错误"))
                     return@subscribeAlways
                 }
             }
@@ -184,14 +226,14 @@ object AutoReply : KotlinPlugin(
                 PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let {
                     if (this.sender.id == PluginConf.manager){
                         it.dictName = it.groupNum.toString()
-                        this.group.sendMessage(At(this.sender.id)+PlainText("取消成功"))
+                        this.group.sendMessage(QuoteReply(this.message)+PlainText("取消成功"))
                         return@subscribeAlways
                     }else{
-                        this.group.sendMessage(At(this.sender.id)+PlainText("权限不足"))
+                        this.group.sendMessage(QuoteReply(this.message)+PlainText("权限不足"))
                         return@subscribeAlways
                     }
                 }
-                this.group.sendMessage(At(this.sender.id)+PlainText("无词库"))
+                this.group.sendMessage(QuoteReply(this.message)+PlainText("无词库"))
                 return@subscribeAlways
             }
 
@@ -208,17 +250,17 @@ object AutoReply : KotlinPlugin(
                                     it1.value.dictName = it1.value.groupNum.toString()
                                 }
                             }
-                            this.group.sendMessage(At(this.sender.id)+PlainText("删除成功"))
+                            this.group.sendMessage(QuoteReply(this.message)+PlainText("删除成功"))
                             return@subscribeAlways
                         }else{
-                            this.group.sendMessage(At(this.sender.id)+PlainText("权限不足"))
+                            this.group.sendMessage(QuoteReply(this.message)+PlainText("权限不足"))
                             return@subscribeAlways
                         }
                     }
-                    this.group.sendMessage(At(this.sender.id)+PlainText("词库不存在"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("词库不存在"))
                     return@subscribeAlways
                 }else{
-                    this.group.sendMessage(At(this.sender.id)+PlainText("格式错误"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("格式错误"))
                     return@subscribeAlways
                 }
             }
@@ -228,7 +270,7 @@ object AutoReply : KotlinPlugin(
                 if (this.sender.id == PluginConf.manager){
                     PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let {
                         it.admin = !it.admin
-                        this.group.sendMessage(At(this.sender.id)+PlainText("切换成功"))
+                        this.group.sendMessage(QuoteReply(this.message)+PlainText("切换成功"))
                         return@subscribeAlways
                     }
                     val ng = GroupInfo(this.group.id, this.group.id.toString(), this.bot.id, true)
@@ -237,10 +279,10 @@ object AutoReply : KotlinPlugin(
                         PluginData.dictData[this.group.id.toString()] = nd
                     }
                     PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()] = ng
-                    this.group.sendMessage(At(this.sender.id)+PlainText("切换成功"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("切换成功"))
                     return@subscribeAlways
                 }else{
-                    this.group.sendMessage(At(this.sender.id)+PlainText("权限不足"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("权限不足"))
                     return@subscribeAlways
                 }
             }
@@ -255,26 +297,26 @@ object AutoReply : KotlinPlugin(
                             if (this.sender.id in it.permission){
                                 val qq: Long = m_split[1].toLong()
                                 if (qq in it.permission){
-                                    this.group.sendMessage(At(this.sender.id)+PlainText("已添加"))
+                                    this.group.sendMessage(QuoteReply(this.message)+PlainText("已添加"))
                                     return@subscribeAlways
                                 }else{
                                     it.permission.add(qq)
-                                    this.group.sendMessage(At(this.sender.id)+PlainText("添加成功"))
+                                    this.group.sendMessage(QuoteReply(this.message)+PlainText("添加成功"))
                                     return@subscribeAlways
                                 }
                             }else{
-                                this.group.sendMessage(At(this.sender.id)+PlainText("权限不足"))
+                                this.group.sendMessage(QuoteReply(this.message)+PlainText("权限不足"))
                                 return@subscribeAlways
                             }
                         }else{
-                            this.group.sendMessage(At(this.sender.id)+PlainText("未开启权限限制"))
+                            this.group.sendMessage(QuoteReply(this.message)+PlainText("未开启权限限制"))
                             return@subscribeAlways
                         }
                     }
-                    this.group.sendMessage(At(this.sender.id)+PlainText("未开启自动回复"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("未开启自动回复"))
                     return@subscribeAlways
                 }else{
-                    this.group.sendMessage(At(this.sender.id)+PlainText("格式错误"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("格式错误"))
                     return@subscribeAlways
                 }
             }
@@ -290,25 +332,25 @@ object AutoReply : KotlinPlugin(
                                 val qq: Long = m_split[1].toLong()
                                 if (qq in it.permission){
                                     it.permission.remove(qq)
-                                    this.group.sendMessage(At(this.sender.id)+PlainText("删除成功"))
+                                    this.group.sendMessage(QuoteReply(this.message)+PlainText("删除成功"))
                                     return@subscribeAlways
                                 }else{
-                                    this.group.sendMessage(At(this.sender.id)+PlainText("无权限"))
+                                    this.group.sendMessage(QuoteReply(this.message)+PlainText("无权限"))
                                     return@subscribeAlways
                                 }
                             }else{
-                                this.group.sendMessage(At(this.sender.id)+PlainText("权限不足"))
+                                this.group.sendMessage(QuoteReply(this.message)+PlainText("权限不足"))
                                 return@subscribeAlways
                             }
                         }else{
-                            this.group.sendMessage(At(this.sender.id)+PlainText("未开启权限限制"))
+                            this.group.sendMessage(QuoteReply(this.message)+PlainText("未开启权限限制"))
                             return@subscribeAlways
                         }
                     }
-                    this.group.sendMessage(At(this.sender.id)+PlainText("未开启自动回复"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("未开启自动回复"))
                     return@subscribeAlways
                 }else{
-                    this.group.sendMessage(At(this.sender.id)+PlainText("格式错误"))
+                    this.group.sendMessage(QuoteReply(this.message)+PlainText("格式错误"))
                     return@subscribeAlways
                 }
             }
@@ -316,29 +358,8 @@ object AutoReply : KotlinPlugin(
             // auto-reply
             PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let { it1 ->
                 PluginData.dictData[it1.dictName]?.let { it2 ->
-                    it2.dictList[m]?.deserializeMiraiCode()?.let { it3 ->
-                        var mc: MessageChain = emptyMessageChain()
-                        for (mc_single in it3){
-                            if (mc_single is Image){
-                                if (!mc_single.isUploaded(this.bot)){
-                                    File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
-                                        if (it4.exists()){
-                                            it4.toExternalResource().use { res ->
-                                                val i: Image = this.group.uploadImage(res)
-                                                mc+=i
-                                            }
-                                        }else{
-                                            mc+=mc_single
-                                        }
-                                    }
-                                }else{
-                                    mc+=mc_single
-                                }
-                            }else{
-                                mc+=mc_single
-                            }
-                        }
-                        this.group.sendMessage(mc)
+                    it2.dictList[m]?.replace("{group}",this.group.id.toString())?.replace("{sender}",this.sender.id.toString())?.deserializeMiraiCode()?.let { it3 ->
+                        this.group.sendMessage(QuoteReply(this.message)+ SendMsg(this.bot, this.group, it3))
                     }
                 }
             }
@@ -350,55 +371,13 @@ object AutoReply : KotlinPlugin(
                     if (this.target.id == this.bot.id){
                         PluginData.dictData[it1.dictName]?.let { it2 ->
                             it2.dictList["NudgeSelf"]?.replace("\${action}", this.action)?.replace("\${suffix}", this.suffix)?.replace("\${from}", this.from.id.toString())?.replace("\${target}", this.target.id.toString())?.deserializeMiraiCode()?.let { it3 ->
-                                var mc: MessageChain = emptyMessageChain()
-                                for (mc_single in it3){
-                                    if (mc_single is Image){
-                                        if (!mc_single.isUploaded(this.bot)){
-                                            File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
-                                                if (it4.exists()){
-                                                    it4.toExternalResource().use { res ->
-                                                        val i: Image = this.subject.uploadImage(res)
-                                                        mc+=i
-                                                    }
-                                                }else{
-                                                    mc+=mc_single
-                                                }
-                                            }
-                                        }else{
-                                            mc+=mc_single
-                                        }
-                                    }else{
-                                        mc+=mc_single
-                                    }
-                                }
-                                this.subject.sendMessage(mc)
+                                this.subject.sendMessage(SendMsg(this.bot, this.subject, it3))
                             }
                         }
                     }else{
                         PluginData.dictData[it1.dictName]?.let { it2 ->
                             it2.dictList["Nudge"]?.replace("\${action}", this.action)?.replace("\${suffix}", this.suffix)?.replace("\${from}", this.from.id.toString())?.replace("\${target}", this.target.id.toString())?.deserializeMiraiCode()?.let { it3 ->
-                                var mc: MessageChain = emptyMessageChain()
-                                for (mc_single in it3){
-                                    if (mc_single is Image){
-                                        if (!mc_single.isUploaded(this.bot)){
-                                            File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
-                                                if (it4.exists()){
-                                                    it4.toExternalResource().use { res ->
-                                                        val i: Image = this.subject.uploadImage(res)
-                                                        mc+=i
-                                                    }
-                                                }else{
-                                                    mc+=mc_single
-                                                }
-                                            }
-                                        }else{
-                                            mc+=mc_single
-                                        }
-                                    }else{
-                                        mc+=mc_single
-                                    }
-                                }
-                                this.subject.sendMessage(mc)
+                                this.subject.sendMessage(SendMsg(this.bot, this.subject, it3))
                             }
                         }
                     }
@@ -411,28 +390,7 @@ object AutoReply : KotlinPlugin(
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberJoin"]?.replace("\${member}", this.member.id.toString())?.deserializeMiraiCode()
                         ?.let { it3 ->
-                            var mc: MessageChain = emptyMessageChain()
-                            for (mc_single in it3){
-                                if (mc_single is Image){
-                                    if (!mc_single.isUploaded(this.bot)){
-                                        File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
-                                            if (it4.exists()){
-                                                it4.toExternalResource().use { res ->
-                                                    val i: Image = this.group.uploadImage(res)
-                                                    mc+=i
-                                                }
-                                            }else{
-                                                mc+=mc_single
-                                            }
-                                        }
-                                    }else{
-                                        mc+=mc_single
-                                    }
-                                }else{
-                                    mc+=mc_single
-                                }
-                            }
-                            this.group.sendMessage(mc)
+                            this.group.sendMessage(SendMsg(this.bot, this.group, it3))
                         }
                 }
             }
@@ -443,28 +401,7 @@ object AutoReply : KotlinPlugin(
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberJoinInvite"]?.replace("\${member}", this.member.id.toString())?.replace("\${invitor}", this.invitor.id.toString())?.deserializeMiraiCode()
                         ?.let { it3 ->
-                            var mc: MessageChain = emptyMessageChain()
-                            for (mc_single in it3){
-                                if (mc_single is Image){
-                                    if (!mc_single.isUploaded(this.bot)){
-                                        File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
-                                            if (it4.exists()){
-                                                it4.toExternalResource().use { res ->
-                                                    val i: Image = this.group.uploadImage(res)
-                                                    mc+=i
-                                                }
-                                            }else{
-                                                mc+=mc_single
-                                            }
-                                        }
-                                    }else{
-                                        mc+=mc_single
-                                    }
-                                }else{
-                                    mc+=mc_single
-                                }
-                            }
-                            this.group.sendMessage(mc)
+                            this.group.sendMessage(SendMsg(this.bot, this.group, it3))
                         }
                 }
             }
@@ -475,28 +412,7 @@ object AutoReply : KotlinPlugin(
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberLeave"]?.replace("\${member}", this.member.id.toString())?.deserializeMiraiCode()
                         ?.let { it3 ->
-                            var mc: MessageChain = emptyMessageChain()
-                            for (mc_single in it3){
-                                if (mc_single is Image){
-                                    if (!mc_single.isUploaded(this.bot)){
-                                        File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
-                                            if (it4.exists()){
-                                                it4.toExternalResource().use { res ->
-                                                    val i: Image = this.group.uploadImage(res)
-                                                    mc+=i
-                                                }
-                                            }else{
-                                                mc+=mc_single
-                                            }
-                                        }
-                                    }else{
-                                        mc+=mc_single
-                                    }
-                                }else{
-                                    mc+=mc_single
-                                }
-                            }
-                            this.group.sendMessage(mc)
+                            this.group.sendMessage(SendMsg(this.bot, this.group, it3))
                         }
                 }
             }
@@ -507,28 +423,7 @@ object AutoReply : KotlinPlugin(
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberLeaveKick"]?.replace("\${member}", this.member.id.toString())?.replace("\${operator}", this.operatorOrBot.id.toString())?.deserializeMiraiCode()
                         ?.let { it3 ->
-                            var mc: MessageChain = emptyMessageChain()
-                            for (mc_single in it3){
-                                if (mc_single is Image){
-                                    if (!mc_single.isUploaded(this.bot)){
-                                        File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
-                                            if (it4.exists()){
-                                                it4.toExternalResource().use { res ->
-                                                    val i: Image = this.group.uploadImage(res)
-                                                    mc+=i
-                                                }
-                                            }else{
-                                                mc+=mc_single
-                                            }
-                                        }
-                                    }else{
-                                        mc+=mc_single
-                                    }
-                                }else{
-                                    mc+=mc_single
-                                }
-                            }
-                            this.group.sendMessage(mc)
+                            this.group.sendMessage(SendMsg(this.bot, this.group, it3))
                         }
                 }
             }
@@ -539,28 +434,7 @@ object AutoReply : KotlinPlugin(
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberMute"]?.replace("\${member}", this.member.id.toString())?.replace("\${durationSeconds}", this.durationSeconds.toString())?.replace("\${operator}", this.operatorOrBot.id.toString())?.deserializeMiraiCode()
                         ?.let { it3 ->
-                            var mc: MessageChain = emptyMessageChain()
-                            for (mc_single in it3){
-                                if (mc_single is Image){
-                                    if (!mc_single.isUploaded(this.bot)){
-                                        File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
-                                            if (it4.exists()){
-                                                it4.toExternalResource().use { res ->
-                                                    val i: Image = this.group.uploadImage(res)
-                                                    mc+=i
-                                                }
-                                            }else{
-                                                mc+=mc_single
-                                            }
-                                        }
-                                    }else{
-                                        mc+=mc_single
-                                    }
-                                }else{
-                                    mc+=mc_single
-                                }
-                            }
-                            this.group.sendMessage(mc)
+                            this.group.sendMessage(SendMsg(this.bot, this.group, it3))
                         }
                 }
             }
@@ -571,32 +445,131 @@ object AutoReply : KotlinPlugin(
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberUnmute"]?.replace("\${member}", this.member.id.toString())?.replace("\${operator}", this.operatorOrBot.id.toString())?.deserializeMiraiCode()
                         ?.let { it3 ->
-                            var mc: MessageChain = emptyMessageChain()
-                            for (mc_single in it3){
-                                if (mc_single is Image){
-                                    if (!mc_single.isUploaded(this.bot)){
-                                        File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it4 ->
-                                            if (it4.exists()){
-                                                it4.toExternalResource().use { res ->
-                                                    val i: Image = this.group.uploadImage(res)
-                                                    mc+=i
-                                                }
-                                            }else{
-                                                mc+=mc_single
-                                            }
-                                        }
-                                    }else{
-                                        mc+=mc_single
-                                    }
-                                }else{
-                                    mc+=mc_single
-                                }
-                            }
-                            this.group.sendMessage(mc)
+                            this.group.sendMessage(SendMsg(this.bot, this.group, it3))
                         }
                 }
             }
         }
+    }
+
+    fun RecMsg(msg: MessageChain): MessageChain{
+        val mc: MessageChain = emptyMessageChain()
+        for (mc_single in msg){
+            if (mc_single is Image){
+                launch {
+                    File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).writeBytes(URL(mc_single.queryUrl()).readBytes())
+                }
+                mc.plus(mc_single)
+            }else if (mc_single is OnlineAudio){
+                launch {
+                    File(dataFolder.absolutePath + File.separatorChar + "audio" + File.separatorChar + mc_single.filename).writeBytes(URL(mc_single.urlForDownload).readBytes())
+                }
+                mc.plus(PlainText("{mirai:audio:"+mc_single.filename+"}"))
+            }else{
+                mc.plus(mc_single)
+            }
+        }
+        return mc
+    }
+
+    suspend fun SendMsg(bot: Bot, target: Contact, msg: MessageChain): MessageChain{
+        val group:Group = target as Group
+        val mc: MessageChain = emptyMessageChain()
+        for (mc_single in msg){
+            if (mc_single is Image){
+                if (!mc_single.isUploaded(bot)){
+                    File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).let { it ->
+                        if (it.exists()){
+                            it.toExternalResource().use { res ->
+                                val i: Image = group.uploadImage(res)
+                                mc.plus(i)
+                            }
+                        }else{
+                            mc.plus(mc_single)
+                        }
+                    }
+                }else{
+                    mc.plus(mc_single)
+                }
+            }else if(mc_single is PlainText){
+                if ("{mirai:" in mc_single.content){
+                    var m:String = mc_single.content
+                    while ("{mirai:" in m){
+                        mc.plus(PlainText(m.substring(0,m.indexOf("{mirai:"))))
+                        m=m.substring(m.indexOf("{mirai:"))
+                        if ("}" in m){
+                            val mirai:String = m.substring(1,m.indexOf("}"))
+                            val mirai_split = mirai.split(":")
+                            if(mirai_split.size>=3) {
+                                when (mirai_split[1]) {
+                                    "audio" -> {
+                                        File(dataFolder.absolutePath + File.separatorChar + "audio" + File.separatorChar + mirai_split[2]).let { it ->
+                                            if (it.exists()) {
+                                                it.toExternalResource().use { res ->
+                                                    val i: Audio = group.uploadAudio(res)
+                                                    mc.plus(i)
+                                                }
+                                            } else {
+                                                mc.plus(mc_single)
+                                            }
+                                        }
+                                    }
+
+                                    "image" -> {
+                                        if (mirai_split[2].startsWith("http")) {
+                                            URL(mirai_split[2]).readBytes().toExternalResource().use {
+                                                val i: Image = group.uploadImage(it)
+                                                mc.plus(i)
+                                            }
+                                        } else {
+                                            File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mirai_split[2]).let {
+                                                if (it.exists()) {
+                                                    it.toExternalResource().use { res ->
+                                                        val i: Image = group.uploadImage(res)
+                                                        mc.plus(i)
+                                                    }
+                                                } else {
+                                                    mc.plus(mc_single)
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    "mute" -> {
+                                        if (mirai_split.size == 3) {
+                                            group.members[mirai_split[2].toLong()]?.unmute()
+                                        } else if (mirai_split.size == 4) {
+                                            group.members[mirai_split[2].toLong()]?.mute(mirai_split[3].toInt())
+                                        }
+                                    }
+
+                                    "unmute" -> {
+                                        group.members[mirai_split[2].toLong()]?.unmute()
+                                    }
+
+                                    "nudge" -> {
+                                        group.members[mirai_split[2].toLong()]?.nudge()?.sendTo(group)
+                                    }
+
+                                    "at" -> {
+                                        if (mirai_split[2] == "all") {
+                                            mc.plus(AtAll)
+                                        } else {
+                                            mc.plus(At(mirai_split[2].toLong()))
+                                        }
+                                    }
+                                }
+                            }
+                            m=m.substring(m.indexOf("}")+1)
+                        }
+                    }
+                    mc.plus(PlainText(m))
+                }
+            }else{
+                mc.plus(mc_single)
+            }
+        }
+        return mc
     }
 
     override fun onDisable() {

@@ -10,4 +10,7 @@ object PluginData: AutoSavePluginData("Data") {
 
     @ValueDescription("词库数据")
     val dictData: MutableMap<String, DictInfo> by value()
+
+    @ValueDescription("临时词条")
+    val tempMsg: MutableMap<String, TempMsg> by value()
 }

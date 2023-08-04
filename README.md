@@ -7,6 +7,7 @@
 ## 指令
 
 - 添加词条`/dictadd 触发语 回复语`
+- 交互式添加`/dictadd`
 - 删除词条`/dictdel 触发语`
 - 创建词库`/dictcreate 词库名`
 - 使用词库`/dictuse 词库名`
@@ -56,7 +57,21 @@
 - 戳一戳后缀`{suffix}`
 - 戳一戳来源`{from}`
 - 戳一戳目标`{target}`
+- 群号`{group}`
+- 发送者QQ号`{sender}`
 
 ### 回复触发功能
 
-制作中
+回复触发格式为`{mirai:action:param}`
+
+- At某人`{mirai:at:QQ}`
+- At全体`{mirai:at:all}`
+- 戳一戳`{mirai:nudge:QQ}`
+- 禁言某人`{mirai:mute:QQ:second}`
+- 解除禁言`{mirai:mute:QQ}`
+- 解除禁言`{mirai:unmute:QQ}`
+- 图片消息`{mirai:image:filename}`
+- 网络图片`{mirai:image:URL}`
+- 语音消息`{mirai:audio:filename}`
+
+图片和语言文件需在对应文件夹下
