@@ -16,6 +16,8 @@ import net.mamoe.mirai.utils.ExternalResource.Companion.toExternalResource
 import net.mamoe.mirai.utils.info
 import java.io.File
 import java.net.URL
+import java.net.URLDecoder
+import java.nio.charset.Charset
 
 object AutoReply : KotlinPlugin(
         JvmPluginDescription(
@@ -517,7 +519,7 @@ object AutoReply : KotlinPlugin(
 
                                     "image" -> {
                                         if (mirai_split[2].startsWith("http")) {
-                                            URL(mirai_split[2]).readBytes().toExternalResource().use {
+                                            URL(URLDecoder.decode(mirai_split[2])).readBytes().toExternalResource().use {
                                                 val i: Image = group.uploadImage(it)
                                                 mc+=i
                                             }

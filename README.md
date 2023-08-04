@@ -71,7 +71,7 @@
 - 解除禁言`${mirai:mute:QQ}`
 - 解除禁言`${mirai:unmute:QQ}`
 - 图片消息`${mirai:image:filename}`
-- 网络图片`${mirai:image:URL}`
+- 网络图片`${mirai:image:EncodedURL}`
 - 语音消息`${mirai:audio:filename}`
 
-图片和语言文件需在对应文件夹下
+图片和语音文件需在对应文件夹下
