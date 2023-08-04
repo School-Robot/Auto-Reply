@@ -583,7 +583,9 @@ object AutoReply : KotlinPlugin(
 
                                     "unmute" -> {
                                         group.members[mirai_split[2].toLong()]?.let {
-                                            it.unmute()
+                                            if (it.permission.level < group.botPermission.level){
+                                                it.unmute()
+                                            }
                                         }
                                     }
 
