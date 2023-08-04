@@ -17,13 +17,12 @@ import net.mamoe.mirai.utils.info
 import java.io.File
 import java.net.URL
 import java.net.URLDecoder
-import java.nio.charset.Charset
 
 object AutoReply : KotlinPlugin(
         JvmPluginDescription(
                 id = "tk.mcsog.auto-reply",
                 name = "Auto Reply",
-                version = "0.2.0",
+                version = "0.2.1",
         ) {
             author("MCSOG")
         }
@@ -361,7 +360,10 @@ object AutoReply : KotlinPlugin(
             PluginData.groupData[this.group.id.toString()+"-"+this.bot.id.toString()]?.let { it1 ->
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList[m]?.replace("\${group}",this.group.id.toString())?.replace("\${sender}",this.sender.id.toString())?.deserializeMiraiCode()?.let { it3 ->
-                        this.group.sendMessage(QuoteReply(this.message)+ SendMsg(this.bot, this.group, it3))
+                        val mc:MessageChain = SendMsg(this.bot, this.group, it3)
+                        if (!mc.isContentEmpty()) {
+                            this.group.sendMessage(QuoteReply(this.message) + mc)
+                        }
                     }
                 }
             }
@@ -373,13 +375,19 @@ object AutoReply : KotlinPlugin(
                     if (this.target.id == this.bot.id){
                         PluginData.dictData[it1.dictName]?.let { it2 ->
                             it2.dictList["NudgeSelf"]?.replace("\${action}", this.action)?.replace("\${suffix}", this.suffix)?.replace("\${from}", this.from.id.toString())?.replace("\${target}", this.target.id.toString())?.deserializeMiraiCode()?.let { it3 ->
-                                this.subject.sendMessage(SendMsg(this.bot, this.subject, it3))
+                                val mc:MessageChain = SendMsg(this.bot, this.subject, it3)
+                                if (!mc.isContentEmpty()) {
+                                    this.subject.sendMessage(mc)
+                                }
                             }
                         }
                     }else{
                         PluginData.dictData[it1.dictName]?.let { it2 ->
                             it2.dictList["Nudge"]?.replace("\${action}", this.action)?.replace("\${suffix}", this.suffix)?.replace("\${from}", this.from.id.toString())?.replace("\${target}", this.target.id.toString())?.deserializeMiraiCode()?.let { it3 ->
-                                this.subject.sendMessage(SendMsg(this.bot, this.subject, it3))
+                                val mc:MessageChain = SendMsg(this.bot, this.subject, it3)
+                                if (!mc.isContentEmpty()) {
+                                    this.subject.sendMessage(mc)
+                                }
                             }
                         }
                     }
@@ -392,7 +400,10 @@ object AutoReply : KotlinPlugin(
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberJoin"]?.replace("\${member}", this.member.id.toString())?.deserializeMiraiCode()
                         ?.let { it3 ->
-                            this.group.sendMessage(SendMsg(this.bot, this.group, it3))
+                            val mc:MessageChain = SendMsg(this.bot, this.group, it3)
+                            if (!mc.isContentEmpty()) {
+                                this.group.sendMessage(mc)
+                            }
                         }
                 }
             }
@@ -403,7 +414,10 @@ object AutoReply : KotlinPlugin(
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberJoinInvite"]?.replace("\${member}", this.member.id.toString())?.replace("\${invitor}", this.invitor.id.toString())?.deserializeMiraiCode()
                         ?.let { it3 ->
-                            this.group.sendMessage(SendMsg(this.bot, this.group, it3))
+                            val mc:MessageChain = SendMsg(this.bot, this.group, it3)
+                            if (!mc.isContentEmpty()) {
+                                this.group.sendMessage(mc)
+                            }
                         }
                 }
             }
@@ -414,7 +428,10 @@ object AutoReply : KotlinPlugin(
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberLeave"]?.replace("\${member}", this.member.id.toString())?.deserializeMiraiCode()
                         ?.let { it3 ->
-                            this.group.sendMessage(SendMsg(this.bot, this.group, it3))
+                            val mc:MessageChain = SendMsg(this.bot, this.group, it3)
+                            if (!mc.isContentEmpty()) {
+                                this.group.sendMessage(mc)
+                            }
                         }
                 }
             }
@@ -425,7 +442,10 @@ object AutoReply : KotlinPlugin(
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberLeaveKick"]?.replace("\${member}", this.member.id.toString())?.replace("\${operator}", this.operatorOrBot.id.toString())?.deserializeMiraiCode()
                         ?.let { it3 ->
-                            this.group.sendMessage(SendMsg(this.bot, this.group, it3))
+                            val mc:MessageChain = SendMsg(this.bot, this.group, it3)
+                            if (!mc.isContentEmpty()) {
+                                this.group.sendMessage(mc)
+                            }
                         }
                 }
             }
@@ -436,7 +456,10 @@ object AutoReply : KotlinPlugin(
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberMute"]?.replace("\${member}", this.member.id.toString())?.replace("\${durationSeconds}", this.durationSeconds.toString())?.replace("\${operator}", this.operatorOrBot.id.toString())?.deserializeMiraiCode()
                         ?.let { it3 ->
-                            this.group.sendMessage(SendMsg(this.bot, this.group, it3))
+                            val mc:MessageChain = SendMsg(this.bot, this.group, it3)
+                            if (!mc.isContentEmpty()) {
+                                this.group.sendMessage(mc)
+                            }
                         }
                 }
             }
@@ -447,34 +470,43 @@ object AutoReply : KotlinPlugin(
                 PluginData.dictData[it1.dictName]?.let { it2 ->
                     it2.dictList["MemberUnmute"]?.replace("\${member}", this.member.id.toString())?.replace("\${operator}", this.operatorOrBot.id.toString())?.deserializeMiraiCode()
                         ?.let { it3 ->
-                            this.group.sendMessage(SendMsg(this.bot, this.group, it3))
+                            val mc:MessageChain = SendMsg(this.bot, this.group, it3)
+                            if (!mc.isContentEmpty()) {
+                                this.group.sendMessage(mc)
+                            }
                         }
                 }
             }
         }
     }
 
-    fun RecMsg(msg: MessageChain): MessageChain{
+    private fun RecMsg(msg: MessageChain): MessageChain{
         var mc: MessageChain = emptyMessageChain()
         for (mc_single in msg){
-            if (mc_single is Image){
-                launch {
-                    File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).writeBytes(URL(mc_single.queryUrl()).readBytes())
+            when (mc_single) {
+                is Image -> {
+                    launch {
+                        File(dataFolder.absolutePath + File.separatorChar + "image" + File.separatorChar + mc_single.imageId).writeBytes(URL(mc_single.queryUrl()).readBytes())
+                    }
+                    mc+=mc_single
                 }
-                mc+=mc_single
-            }else if (mc_single is OnlineAudio){
-                launch {
-                    File(dataFolder.absolutePath + File.separatorChar + "audio" + File.separatorChar + mc_single.filename).writeBytes(URL(mc_single.urlForDownload).readBytes())
+
+                is OnlineAudio -> {
+                    launch {
+                        File(dataFolder.absolutePath + File.separatorChar + "audio" + File.separatorChar + mc_single.filename).writeBytes(URL(mc_single.urlForDownload).readBytes())
+                    }
+                    mc+=PlainText("\${mirai:audio:"+mc_single.filename+"}")
                 }
-                mc+=PlainText("\${mirai:audio:"+mc_single.filename+"}")
-            }else{
-                mc+=mc_single
+
+                else -> {
+                    mc+=mc_single
+                }
             }
         }
         return mc
     }
 
-    suspend fun SendMsg(bot: Bot, target: Contact, msg: MessageChain): MessageChain{
+    private suspend fun SendMsg(bot: Bot, target: Contact, msg: MessageChain): MessageChain{
         val group:Group = target as Group
         var mc: MessageChain = emptyMessageChain()
         for (mc_single in msg){
@@ -509,10 +541,8 @@ object AutoReply : KotlinPlugin(
                                             if (it.exists()) {
                                                 it.toExternalResource().use { res ->
                                                     val i: Audio = group.uploadAudio(res)
-                                                    mc+=i
+                                                    group.sendMessage(i)
                                                 }
-                                            } else {
-                                                mc+=mc_single
                                             }
                                         }
                                     }
@@ -530,8 +560,6 @@ object AutoReply : KotlinPlugin(
                                                         val i: Image = group.uploadImage(res)
                                                         mc+=i
                                                     }
-                                                } else {
-                                                    mc+=mc_single
                                                 }
                                             }
                                         }
@@ -539,14 +567,24 @@ object AutoReply : KotlinPlugin(
 
                                     "mute" -> {
                                         if (mirai_split.size == 3) {
-                                            group.members[mirai_split[2].toLong()]?.unmute()
+                                            group.members[mirai_split[2].toLong()]?.let {
+                                                if (it.permission.level < group.botPermission.level){
+                                                    it.unmute()
+                                                }
+                                            }
                                         } else if (mirai_split.size == 4) {
-                                            group.members[mirai_split[2].toLong()]?.mute(mirai_split[3].toInt())
+                                            group.members[mirai_split[2].toLong()]?.let {
+                                                if (it.permission.level < group.botPermission.level){
+                                                    it.mute(mirai_split[3].toInt())
+                                                }
+                                            }
                                         }
                                     }
 
                                     "unmute" -> {
-                                        group.members[mirai_split[2].toLong()]?.unmute()
+                                        group.members[mirai_split[2].toLong()]?.let {
+                                            it.unmute()
+                                        }
                                     }
 
                                     "nudge" -> {
@@ -555,7 +593,9 @@ object AutoReply : KotlinPlugin(
 
                                     "at" -> {
                                         if (mirai_split[2] == "all") {
-                                            mc+=AtAll
+                                            if (group.botPermission.level > 0) {
+                                                mc += AtAll
+                                            }
                                         } else {
                                             mc+=At(mirai_split[2].toLong())
                                         }
