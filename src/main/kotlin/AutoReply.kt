@@ -1,6 +1,8 @@
 package tk.mcsog
 
 import kotlinx.coroutines.launch
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.*
 import net.mamoe.mirai.Bot
 import net.mamoe.mirai.console.plugin.jvm.JvmPluginDescription
 import net.mamoe.mirai.console.plugin.jvm.KotlinPlugin
@@ -22,7 +24,7 @@ object AutoReply : KotlinPlugin(
         JvmPluginDescription(
                 id = "tk.mcsog.auto-reply",
                 name = "Auto Reply",
-                version = "0.2.1",
+                version = "0.2.2",
         ) {
             author("MCSOG")
         }
@@ -600,6 +602,19 @@ object AutoReply : KotlinPlugin(
                                             }
                                         } else {
                                             mc+=At(mirai_split[2].toLong())
+                                        }
+                                    }
+                                    "plain" -> {
+                                        if (mirai_split[2].startsWith("http")) {
+                                            if (mirai_split.size == 3) {
+                                                mc+=PlainText(URL(URLDecoder.decode(mirai_split[2])).readBytes().toString())
+                                            }else if (mirai_split.size == 4){
+                                                Json.parseToJsonElement(URL(URLDecoder.decode(mirai_split[2])).readBytes().toString()).jsonObject[mirai_split[3]]?.jsonPrimitive?.let {
+                                                    mc+=PlainText(it.content)
+                                                }
+                                            }
+                                        }else{
+                                            mc+=PlainText(mirai_split[2])
                                         }
                                     }
                                 }

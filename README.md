@@ -73,5 +73,8 @@
 - 图片消息`${mirai:image:filename}`
 - 网络图片`${mirai:image:EncodedURL}`
 - 语音消息`${mirai:audio:filename}`
+- 文本消息`${mirai:plain:text}`
+- 网络文本`${mirai:plain:EncodedURL}`
+- 网络JSON`${mirai:plain:EncodedURL:key}`
 
 图片和语音文件需在对应文件夹下
