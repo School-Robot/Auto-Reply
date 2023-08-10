@@ -19,6 +19,8 @@ import net.mamoe.mirai.utils.info
 import java.io.File
 import java.net.URL
 import java.net.URLDecoder
+import java.nio.charset.Charset
+import kotlin.math.log
 
 object AutoReply : KotlinPlugin(
         JvmPluginDescription(
@@ -607,9 +609,11 @@ object AutoReply : KotlinPlugin(
                                     "plain" -> {
                                         if (mirai_split[2].startsWith("http")) {
                                             if (mirai_split.size == 3) {
-                                                mc+=PlainText(URL(URLDecoder.decode(mirai_split[2])).readBytes().toString())
+                                                mc+=PlainText(URL(URLDecoder.decode(mirai_split[2])).readBytes().toString(
+                                                    Charset.defaultCharset()))
                                             }else if (mirai_split.size == 4){
-                                                Json.parseToJsonElement(URL(URLDecoder.decode(mirai_split[2])).readBytes().toString()).jsonObject[mirai_split[3]]?.jsonPrimitive?.let {
+                                                Json.parseToJsonElement(URL(URLDecoder.decode(mirai_split[2])).readBytes().toString(
+                                                    Charset.defaultCharset())).jsonObject[mirai_split[3]]?.jsonPrimitive?.let {
                                                     mc+=PlainText(it.content)
                                                 }
                                             }
